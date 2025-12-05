@@ -3,7 +3,7 @@
 import React, { createContext, useContext, ReactNode, useMemo, useState, useEffect } from 'react';
 import { FirebaseApp, initializeApp, getApps, getApp } from 'firebase/app';
 import { Firestore, getFirestore } from 'firebase/firestore';
-import { Auth, User, onAuthStateChanged } from 'firebase/auth';
+import { Auth, User, onAuthStateChanged, getAuth } from 'firebase/auth';
 import { firebaseConfig } from './config';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
 

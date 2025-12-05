@@ -36,7 +36,7 @@ export default function NotesPage() {
     return query(
       collection(firestore, "users", user.uid, "userNotes"),
       where("category", "==", selectedSoftware),
-      orderBy("updatedAt", "desc")
+      orderBy("createdAt", "desc")
     );
   }, [user, firestore, selectedSoftware]);
 

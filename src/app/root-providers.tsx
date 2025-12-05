@@ -2,17 +2,17 @@
 "use client";
 
 import AppLayout from "@/components/app-layout";
-import { FirebaseClientProvider } from "@/firebase";
+import { FirebaseProvider } from "@/firebase/provider";
 import { SoftwareProvider } from "@/context/software-context";
 
 export default function RootProviders({ children }: { children: React.ReactNode }) {
     return (
-        <SoftwareProvider>
-            <FirebaseClientProvider>
+        <FirebaseProvider>
+            <SoftwareProvider>
                 <AppLayout>
                     {children}
                 </AppLayout>
-            </FirebaseClientProvider>
-        </SoftwareProvider>
+            </SoftwareProvider>
+        </FirebaseProvider>
     )
 }
