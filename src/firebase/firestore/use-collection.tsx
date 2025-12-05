@@ -91,10 +91,15 @@ export function useCollection<T = any>(
             ? (memoizedTargetRefOrQuery as CollectionReference).path
             : (memoizedTargetRefOrQuery as unknown as InternalQuery)._query.path.canonicalString()
 
-        const contextualError = new FirestorePermissionError({
-          operation: 'list',
-          path,
-        })
+        // IMPORTANT: Augment the contextual error with the original error message from Firebase.
+        // This ensures the index creation link is visible in the console.
+        const contextualError = new FirestorePermissionError(
+          {
+            operation: 'list',
+            path,
+          },
+          error.message // Pass the original error message
+        );
 
         setError(contextualError)
         setData(null)

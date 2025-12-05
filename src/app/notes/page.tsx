@@ -44,8 +44,8 @@ export default function NotesPage() {
     if (!user || !firestore) return null;
     return query(
       collection(firestore, "users", user.uid, "userNotes"),
-      where("category", "==", selectedSoftware)
-      // orderBy("createdAt", "desc") // Temporarily removed to fix permission error.
+      where("category", "==", selectedSoftware),
+      orderBy("createdAt", "desc")
     );
   }, [user, firestore, selectedSoftware]);
 

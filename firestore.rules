@@ -110,6 +110,16 @@ service cloud.firestore {
     }
 
     /**
+     * @description Secures the user document itself.
+     * @path /users/{userId}
+     * @allow A user can read or update their own user document. Creation/deletion is not typically done by clients.
+     */
+    match /users/{userId} {
+      allow read, update: if isOwner(userId);
+      allow create, delete: if false;
+    }
+
+    /**
      * @description Secures user-created notes, ensuring only the owner can access them.
      * @path /users/{userId}/userNotes/{userNoteId}
      * @allow (create) A signed-in user (auth.uid: 'user123') creates a note under their own path (`/users/user123/userNotes/...`) and correctly sets `userId: 'user123'` in the document data.
