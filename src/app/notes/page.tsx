@@ -29,7 +29,7 @@ type Note = BaseUserNote & {
     updatedAt: Timestamp;
 };
 
-const defaultNoteState = { title: "", content: "", category: "", imageUrl: "" };
+const defaultNoteState: Omit<Note, 'id' | 'createdAt' | 'updatedAt' | 'userId'> = { title: "", content: "", category: "", imageUrl: "" };
 
 export default function NotesPage() {
   const { user, isUserLoading } = useUser();
@@ -315,4 +315,6 @@ export default function NotesPage() {
     </div>
   );
 }
+    
+
     
