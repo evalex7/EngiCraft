@@ -1,3 +1,4 @@
+
 {
   "entities": {
     "Hotkey": {
@@ -184,6 +185,11 @@
           "type": "string",
           "description": "The date and time the note was created.",
           "format": "date-time"
+        },
+        "updatedAt": {
+            "type": "string",
+            "description": "The date and time the note was last updated.",
+            "format": "date-time"
         }
       },
       "required": [
@@ -191,7 +197,8 @@
         "userId",
         "title",
         "content",
-        "createdAt"
+        "createdAt",
+        "updatedAt"
       ]
     },
     "User": {

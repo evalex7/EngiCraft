@@ -22,16 +22,7 @@ import {
 import { useUser, useFirestore, useCollection, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking, setDocumentNonBlocking } from "@/firebase";
 import { collection, doc, query, orderBy, where, serverTimestamp } from "firebase/firestore";
 import { useSoftwareContext } from "@/context/software-context";
-
-type Note = {
-  id: string;
-  title: string;
-  content: string;
-  category: string;
-  imageUrl?: string;
-  createdAt: any; 
-  userId: string;
-};
+import { type UserNote as Note } from "@/lib/data";
 
 const defaultNoteState = { title: "", content: "", category: "", imageUrl: "" };
 
@@ -45,7 +36,7 @@ export default function NotesPage() {
     return query(
       collection(firestore, "users", user.uid, "userNotes"),
       where("category", "==", selectedSoftware),
-      orderBy("createdAt", "desc")
+      orderBy("updatedAt", "desc")
     );
   }, [user, firestore, selectedSoftware]);
 
@@ -83,23 +74,23 @@ export default function NotesPage() {
     if (!user || !firestore) return;
     if (currentNote.title.trim() === "" || currentNote.content.trim() === "") return;
 
-    if (editingId) {
-      const noteDocRef = doc(firestore, "users", user.uid, "userNotes", editingId);
-      const notePayload = {
-        title: currentNote.title,
-        content: currentNote.content,
-        ...(currentNote.imageUrl && { imageUrl: currentNote.imageUrl }),
-      };
-      setDocumentNonBlocking(noteDocRef, notePayload, { merge: true });
-    } else {
-      const notePayload = {
+    const notePayload: Partial<Note> & { updatedAt: any } = {
         userId: user.uid,
         title: currentNote.title,
         content: currentNote.content,
         category: selectedSoftware,
-        ...(currentNote.imageUrl && { imageUrl: currentNote.imageUrl }),
-        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(), // Always update the timestamp
       };
+
+      if (currentNote.imageUrl) {
+        notePayload.imageUrl = currentNote.imageUrl;
+      }
+
+    if (editingId) {
+      const noteDocRef = doc(firestore, "users", user.uid, "userNotes", editingId);
+      setDocumentNonBlocking(noteDocRef, notePayload, { merge: true });
+    } else {
+      notePayload.createdAt = serverTimestamp(); // Set createdAt only on creation
       const notesCollection = collection(firestore, 'users', user.uid, 'userNotes');
       addDocumentNonBlocking(notesCollection, notePayload);
     }

@@ -76,6 +76,7 @@ export type UserNote = {
     category: string;
     imageUrl?: string;
     createdAt: Timestamp | Date | any; 
+    updatedAt: Timestamp | Date | any;
     userId: string;
 };
 
