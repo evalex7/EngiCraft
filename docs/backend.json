@@ -1,0 +1,414 @@
+{
+  "entities": {
+    "Hotkey": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Hotkey",
+      "type": "object",
+      "description": "Represents a Revit hotkey and its corresponding action.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Hotkey entity."
+        },
+        "keyCombination": {
+          "type": "string",
+          "description": "The key combination for the hotkey (e.g., Ctrl+Shift+C)."
+        },
+        "action": {
+          "type": "string",
+          "description": "The action performed by the hotkey."
+        },
+        "description": {
+          "type": "string",
+          "description": "A description of what the hotkey does."
+        }
+      },
+      "required": [
+        "id",
+        "keyCombination",
+        "action"
+      ]
+    },
+    "UserHotkey": {
+      "title": "User Hotkey",
+      "type": "object",
+      "description": "A user-defined hotkey.",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user who created this hotkey."
+        },
+        "command": {
+          "type": "string",
+          "description": "The command or action name."
+        },
+        "keys": {
+          "type": "string",
+          "description": "The key combination."
+        },
+        "description": {
+          "type": "string",
+          "description": "A description of the hotkey."
+        },
+        "software": {
+          "type": "string",
+          "description": "The software this hotkey applies to (e.g., Revit)."
+        },
+        "isCustom": {
+            "type": "boolean"
+        }
+      },
+      "required": ["userId", "command", "keys", "description", "software"]
+    },
+    "WorkflowTip": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "WorkflowTip",
+      "type": "object",
+      "description": "Represents a tip or best practice for a Revit workflow.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the WorkflowTip entity."
+        },
+        "title": {
+          "type": "string",
+          "description": "The title of the workflow tip."
+        },
+        "description": {
+          "type": "string",
+          "description": "A detailed explanation of the workflow tip."
+        },
+        "steps": {
+          "type": "array",
+          "description": "An array of steps for the workflow tip.",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "description"
+      ]
+    },
+    "YouTubeVideo": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "YouTubeVideo",
+      "type": "object",
+      "description": "Represents a YouTube video related to Revit.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the YouTubeVideo entity."
+        },
+        "videoId": {
+          "type": "string",
+          "description": "The ID of the video on YouTube."
+        },
+        "title": {
+          "type": "string",
+          "description": "The title of the YouTube video."
+        },
+        "description": {
+          "type": "string",
+          "description": "A brief description of the video content."
+        },
+        "tags": {
+          "type": "array",
+          "description": "Tags associated with the video.",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "videoId",
+        "title"
+      ]
+    },
+    "Timestamp": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Timestamp",
+      "type": "object",
+      "description": "Represents a specific timestamp within a YouTube video.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Timestamp entity."
+        },
+        "videoId": {
+          "type": "string",
+          "description": "Reference to YouTubeVideo. (Relationship: YouTubeVideo 1:N Timestamp)"
+        },
+        "time": {
+          "type": "number",
+          "description": "The timestamp in seconds."
+        },
+        "description": {
+          "type": "string",
+          "description": "A description of what happens at this timestamp."
+        }
+      },
+      "required": [
+        "id",
+        "videoId",
+        "time",
+        "description"
+      ]
+    },
+    "UserNote": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "UserNote",
+      "type": "object",
+      "description": "Represents a user-created note, tip, or link.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the UserNote entity."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User. (Relationship: User 1:N UserNote)"
+        },
+        "title": {
+          "type": "string",
+          "description": "The title of the user note."
+        },
+        "content": {
+          "type": "string",
+          "description": "The content of the user note (text, link, etc.)."
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "The date and time the note was created.",
+          "format": "date-time"
+        }
+      },
+      "required": [
+        "id",
+        "userId",
+        "title",
+        "content",
+        "createdAt"
+      ]
+    },
+    "User": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "User",
+      "type": "object",
+      "description": "Represents a user of the application.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the User entity."
+        },
+        "email": {
+          "type": "string",
+          "description": "The user's email address.",
+          "format": "email"
+        },
+        "name": {
+          "type": "string",
+          "description": "The user's display name."
+        }
+      },
+      "required": [
+        "id",
+        "email",
+        "name"
+      ]
+    },
+     "Category": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Category",
+      "type": "object",
+      "description": "Represents a user-defined category for notes.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the Category (e.g., 'revit-tips')."
+        },
+        "name": {
+          "type": "string",
+          "description": "The display name of the category (e.g., 'Revit Tips')."
+        },
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user who created this category."
+        }
+      },
+      "required": ["id", "name", "userId"]
+    },
+    "UserWorkflow": {
+      "title": "User Workflow",
+      "type": "object",
+      "description": "A user-defined workflow.",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user who created this workflow."
+        },
+        "title": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "steps": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "description": { "type": "string" },
+              "timestamp": { "type": "string" }
+            }
+          }
+        },
+        "videoId": {
+          "type": "string"
+        },
+        "software": {
+          "type": "string"
+        },
+        "isCustom": {
+          "type": "boolean"
+        }
+      },
+      "required": ["userId", "title", "description", "software"]
+    }
+  },
+  "auth": {
+    "providers": [
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/hotkeys/{hotkeyId}",
+        "definition": {
+          "entityName": "Hotkey",
+          "schema": {
+            "$ref": "#/backend/entities/Hotkey"
+          },
+          "description": "Stores Revit hotkey data, accessible to all users.",
+          "params": [
+            {
+              "name": "hotkeyId",
+              "description": "Unique identifier for the Hotkey entity."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/workflowTips/{workflowTipId}",
+        "definition": {
+          "entityName": "WorkflowTip",
+          "schema": {
+            "$ref": "#/backend/entities/WorkflowTip"
+          },
+          "description": "Stores workflow tips, accessible to all users.",
+          "params": [
+            {
+              "name": "workflowTipId",
+              "description": "Unique identifier for the WorkflowTip entity."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/youTubeVideos/{youtubeVideoId}",
+        "definition": {
+          "entityName": "YouTubeVideo",
+          "schema": {
+            "$ref": "#/backend/entities/YouTubeVideo"
+          },
+          "description": "Stores YouTube video data, accessible to all users.",
+          "params": [
+            {
+              "name": "youtubeVideoId",
+              "description": "Unique identifier for the YouTubeVideo entity."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/userNotes/{userNoteId}",
+        "definition": {
+          "entityName": "UserNote",
+          "schema": {
+            "$ref": "#/backend/entities/UserNote"
+          },
+          "description": "Stores user-specific notes, accessible only to the owning user. Path-based ownership enforced via the 'userId' path parameter.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "Unique identifier of the user."
+            },
+            {
+              "name": "userNoteId",
+              "description": "Unique identifier for the UserNote entity."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/categories/{categoryId}",
+        "definition": {
+          "entityName": "Category",
+          "schema": { "$ref": "#/backend/entities/Category" },
+          "description": "Stores user-defined categories for notes, accessible only to the owning user.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "Unique identifier of the user."
+            },
+            {
+              "name": "categoryId",
+              "description": "Unique identifier for the Category entity."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/userHotkeys/{userHotkeyId}",
+        "definition": {
+          "entityName": "UserHotkey",
+          "schema": { "$ref": "#/backend/entities/UserHotkey" },
+          "description": "Stores user-defined hotkeys, accessible only to the owning user.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "Unique identifier of the user."
+            },
+            {
+              "name": "userHotkeyId",
+              "description": "Unique identifier for the UserHotkey entity."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/userWorkflows/{userWorkflowId}",
+        "definition": {
+          "entityName": "UserWorkflow",
+          "schema": { "$ref": "#/backend/entities/UserWorkflow" },
+          "description": "Stores user-defined workflows, accessible only to the owning user.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "Unique identifier of the user."
+            },
+            {
+              "name": "userWorkflowId",
+              "description": "Unique identifier for the UserWorkflow entity."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to support the RevitCraft Navigator application, focusing on hotkeys, workflow tips, YouTube video integration, and user-created notes. It prioritizes authorization independence, clarity, and scalability.\n\n**Authorization Independence:** User-specific data (UserNotes, Categories, UserHotkeys, UserWorkflows) are stored under `/users/{userId}` to leverage path-based ownership, eliminating the need for `get()` calls in security rules. All other data (Hotkeys, WorkflowTips, YouTubeVideos) is considered global/read-only for all users and is stored in root-level collections.\n\n**Structural Segregation:** Data is segregated into distinct collections based on its nature and access requirements:\n*   `/hotkeys`: Stores global hotkey data, accessible to all users.\n*   `/workflowTips`: Stores global workflow tips, accessible to all users.\n*   `/youTubeVideos`: Stores global YouTube video data, accessible to all users.\n*   `/users/{userId}/userNotes`: Stores user-specific notes, accessible only to the owning user.\n*   `/users/{userId}/categories`: Stores user-defined categories, accessible only to the owning user.\n*   `/users/{userId}/userHotkeys`: Stores user-defined hotkeys, accessible only to the owning user.\n*   `/users/{userId}/userWorkflows`: Stores user-defined workflows, accessible only to the owning user.\n\n**Access Modeling:**\n*   Path-Based Ownership: UserNotes, Categories, UserHotkeys, and UserWorkflows are owned by individual users, enforced by the path structure `/users/{userId}/...`.\n*   Global Read-Only: Hotkeys, WorkflowTips, and YouTubeVideos do not require user-specific authorization.\n\n**QAPs (Rules are not Filters):** The structure enables secure `list` operations:\n*   Listing hotkeys, workflow tips, or YouTube videos requires no user context and can be done securely at the collection level.\n*   Listing user notes, categories, hotkeys and workflows is restricted to the owning user via path-based rules, allowing secure and efficient filtering by `userId`.\n\nThis design avoids hierarchical authorization dependencies (`get()`), promotes clear authorization intent, adheres to DBAC principles (no custom claims), and supports secure list operations. It also facilitates maintaining the integrity of ownership and timestamps."
+  }
+}

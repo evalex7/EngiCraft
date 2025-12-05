@@ -1,0 +1,155 @@
+/**
+ * Core Philosophy: This ruleset implements a dual security model. It provides
+ * public, read-only access to shared application content (Hotkeys, Workflow Tips,
+ * YouTube Videos) while enforcing a strict, private ownership model for
+ * user-generated data (User Notes, Categories, User Hotkeys, User Workflows).
+ *
+ * Data Structure: Shared data is stored in top-level collections like /hotkeys.
+ * Private user data is nested under a user-specific path, /users/{userId}/...,
+ * which enables simple and performant path-based security checks.
+ *
+ * Key Security Decisions:
+ * - Public Content Integrity: All top-level collections with shared data
+ *   (hotkeys, workflowTips, youTubeVideos) are read-only for clients. This
+ *   prevents any user from tampering with or deleting communal resources.
+ *   These collections must be populated via a trusted admin SDK.
+ * - Strict User Privacy: A user can only access the data within their own
+ *   data tree (/users/{userId}/...). They cannot read, write, or even know
+ *   about the existence of data belonging to other users.
+ * - Default Deny: Access is implicitly denied unless an 'allow' rule
+ *   explicitly grants it. Write access is never granted without authentication
+ *   and authorization.
+ *
+ * Denormalization for Authorization: The /users/{userId}/... path
+ * structure is the primary mechanism for authorization. We also enforce that
+ * each document contains a 'userId' field matching the path (where applicable),
+ * which ensures relational integrity on creation and prevents the document's
+ * ownership from ever being changed.
+ *
+ * Structural Segregation: The separation of public collections (e.g., /hotkeys)
+ * from private user-owned subcollections (e.g., /users/{userId}/userNotes)
+ * creates a clear, secure, and highly performant ruleset that avoids complex
+ * and slow cross-collection reads.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    //-------------------------------------------------------------------------
+    // Helper Functions
+    //-------------------------------------------------------------------------
+
+    /**
+     * Checks if a user is authenticated.
+     */
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    /**
+     * Checks if the currently signed-in user's UID matches the provided userId.
+     * This is the foundation of the ownership model.
+     */
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    /**
+     * Checks if the document exists and if the requester is the owner.
+     * CRITICAL for safe update and delete operations to prevent modifying
+     * a non-existent document.
+     */
+    function isExistingOwner(userId) {
+      return isOwner(userId) && resource != null;
+    }
+
+    //-------------------------------------------------------------------------
+    // Collection Rules
+    //-------------------------------------------------------------------------
+
+    /**
+     * @description Provides public, read-only access to all Revit hotkeys.
+     * @path /hotkeys/{hotkeyId}
+     * @allow (get) Any user, signed in or not, can read a specific hotkey document.
+     * @deny (create) No client is ever allowed to create, update, or delete hotkeys.
+     * @principle Protects shared, global data from modification by end-users.
+     */
+    match /hotkeys/{hotkeyId} {
+      allow get, list: if true;
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    /**
+     * @description Provides public, read-only access to all Revit workflow tips.
+     * @path /workflowTips/{workflowTipId}
+     * @allow (list) Any user, signed in or not, can list all workflow tips.
+     * @deny (update) No client is ever allowed to create, update, or delete tips.
+     * @principle Protects shared, global data from modification by end-users.
+     */
+    match /workflowTips/{workflowTipId} {
+      allow get, list: if true;
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    /**
+     * @description Provides public, read-only access to all YouTube video metadata.
+     * @path /youTubeVideos/{youtubeVideoId}
+     * @allow (get) Any user, signed in or not, can read specific video metadata.
+     * @deny (delete) No client is ever allowed to create, update, or delete videos.
+     * @principle Protects shared, global data from modification by end-users.
+     */
+    match /youTubeVideos/{youtubeVideoId} {
+      allow get, list: if true;
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    /**
+     * @description Secures user-created notes, ensuring only the owner can access them.
+     * @path /users/{userId}/userNotes/{userNoteId}
+     * @allow (create) A signed-in user (auth.uid: 'user123') creates a note under their own path (`/users/user123/userNotes/...`) and correctly sets `userId: 'user123'` in the document data.
+     * @deny (get) A signed-in user (auth.uid: 'user456') attempts to read a note from `/users/user123/userNotes/...`.
+     * @principle Restricts access to a user's own data tree using path-based ownership.
+     */
+    match /users/{userId}/userNotes/{userNoteId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) && request.resource.data.userId == userId;
+      allow update: if isExistingOwner(userId) && request.resource.data.userId == resource.data.userId;
+      allow delete: if isExistingOwner(userId);
+    }
+    
+    /**
+     * @description Secures user-defined categories.
+     * @path /users/{userId}/categories/{categoryId}
+     * @allow (create, read, update, delete) A signed-in user can manage their own categories.
+     * @deny All other access.
+     */
+    match /users/{userId}/categories/{categoryId} {
+      allow read, write: if isOwner(userId);
+    }
+
+    /**
+     * @description Secures user-defined hotkeys.
+     * @path /users/{userId}/userHotkeys/{userHotkeyId}
+     * @allow (create, read, update, delete) A signed-in user can manage their own hotkeys.
+     * @deny All other access.
+     */
+    match /users/{userId}/userHotkeys/{userHotkeyId} {
+      allow read, write: if isOwner(userId);
+    }
+     /**
+     * @description Secures user-defined workflows.
+     * @path /users/{userId}/userWorkflows/{userWorkflowId}
+     * @allow (create, read, update, delete) A signed-in user can manage their own workflows.
+     * @deny All other access.
+     */
+    match /users/{userId}/userWorkflows/{userWorkflowId} {
+      allow read, write: if isOwner(userId);
+    }
+  }
+}
