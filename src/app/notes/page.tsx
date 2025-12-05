@@ -20,9 +20,14 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useUser, useFirestore, useCollection, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking, setDocumentNonBlocking } from "@/firebase";
-import { collection, doc, query, orderBy, where, serverTimestamp } from "firebase/firestore";
+import { collection, doc, query, orderBy, where, serverTimestamp, type Timestamp } from "firebase/firestore";
 import { useSoftwareContext } from "@/context/software-context";
-import { type UserNote as Note } from "@/lib/data";
+import { type UserNote as BaseUserNote } from "@/lib/data";
+
+// Extend the base note type to include the required updated timestamp
+type Note = BaseUserNote & {
+    updatedAt: Timestamp;
+};
 
 const defaultNoteState = { title: "", content: "", category: "", imageUrl: "" };
 
@@ -31,12 +36,13 @@ export default function NotesPage() {
   const firestore = useFirestore();
   const { selectedSoftware } = useSoftwareContext();
 
+  // THE FIX: Sort by 'updatedAt' for reliable real-time updates.
   const notesQuery = useMemoFirebase(() => {
     if (!user || !firestore) return null;
     return query(
       collection(firestore, "users", user.uid, "userNotes"),
       where("category", "==", selectedSoftware),
-      orderBy("createdAt", "desc")
+      orderBy("updatedAt", "desc")
     );
   }, [user, firestore, selectedSoftware]);
 
@@ -74,12 +80,13 @@ export default function NotesPage() {
     if (!user || !firestore) return;
     if (currentNote.title.trim() === "" || currentNote.content.trim() === "") return;
 
+    // THE FIX: Always include `updatedAt` on every save operation.
     const notePayload: Partial<Note> & { updatedAt: any } = {
         userId: user.uid,
         title: currentNote.title,
         content: currentNote.content,
         category: selectedSoftware,
-        updatedAt: serverTimestamp(), // Always update the timestamp
+        updatedAt: serverTimestamp(), // This triggers synchronization
       };
 
       if (currentNote.imageUrl) {
@@ -308,3 +315,4 @@ export default function NotesPage() {
     </div>
   );
 }
+    
