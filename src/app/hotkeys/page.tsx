@@ -3,7 +3,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { useUser, useFirestore, useCollection } from "@/firebase";
-import { collection, doc, query, where, addDoc, setDoc, deleteDoc } from "firebase/firestore";
+import { collection, doc, query, where, addDoc, updateDoc, deleteDoc } from "firebase/firestore";
 import { type Hotkey as BaseHotkey } from '@/lib/data';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -16,8 +16,8 @@ import {
   TableCell,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { ArrowUpDown, Search, Plus, Trash2, Edit, ChevronDown, GripVertical, ArrowUp, ArrowDown } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { ArrowUpDown, Search, Plus, Trash2, Edit, GripVertical } from 'lucide-react';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { useSoftwareContext } from '@/context/software-context';
 import { softwareOptions } from '@/lib/data';
 import {
@@ -127,22 +127,20 @@ export default function HotkeysPage() {
   const handleSaveHotkey = async () => {
     if (!currentHotkey.command || !currentHotkey.keys || !currentHotkey.description || !user || !firestore) return;
     
-    const payload: Omit<Hotkey, 'id'> = {
+    const payload = {
         command: currentHotkey.command,
         keys: currentHotkey.keys,
         description: currentHotkey.description,
         software: currentHotkey.software,
-        userId: user.uid,
-        isCustom: true,
     };
     
     try {
         if (editingId) {
           const hotkeyDocRef = doc(firestore, "users", user.uid, "userHotkeys", editingId);
-          await setDoc(hotkeyDocRef, payload, { merge: true });
+          await updateDoc(hotkeyDocRef, payload);
         } else {
           const hotkeysCollection = collection(firestore, 'users', user.uid, 'userHotkeys');
-          await addDoc(hotkeysCollection, payload);
+          await addDoc(hotkeysCollection, { ...payload, userId: user.uid, isCustom: true });
         }
     } catch (error) {
         console.error("Error saving hotkey: ", error);

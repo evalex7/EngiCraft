@@ -20,7 +20,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useUser, useFirestore, useCollection } from "@/firebase";
-import { collection, doc, query, where, serverTimestamp, type Timestamp, addDoc, setDoc, deleteDoc } from "firebase/firestore";
+import { collection, doc, query, where, serverTimestamp, type Timestamp, addDoc, updateDoc, deleteDoc } from "firebase/firestore";
 import { useSoftwareContext } from "@/context/software-context";
 import { type UserNote as BaseUserNote } from "@/lib/data";
 
@@ -78,26 +78,25 @@ export default function NotesPage() {
     if (!user || !firestore) return;
     if (currentNote.title.trim() === "" || currentNote.content.trim() === "") return;
 
-    const notePayload: Partial<Note> & { updatedAt: any } = {
-        userId: user.uid,
+    const notePayload = {
         title: currentNote.title,
         content: currentNote.content,
         category: selectedSoftware,
+        imageUrl: currentNote.imageUrl || "",
         updatedAt: serverTimestamp(),
       };
-
-      if (currentNote.imageUrl) {
-        notePayload.imageUrl = currentNote.imageUrl;
-      }
 
     try {
         if (editingId) {
           const noteDocRef = doc(firestore, "users", user.uid, "userNotes", editingId);
-          await setDoc(noteDocRef, notePayload, { merge: true });
+          await updateDoc(noteDocRef, notePayload);
         } else {
-          notePayload.createdAt = serverTimestamp();
           const notesCollection = collection(firestore, 'users', user.uid, 'userNotes');
-          await addDoc(notesCollection, notePayload);
+          await addDoc(notesCollection, {
+              ...notePayload,
+              userId: user.uid,
+              createdAt: serverTimestamp(),
+          });
         }
     } catch (error) {
         console.error("Error saving note: ", error);
@@ -144,18 +143,18 @@ export default function NotesPage() {
   const filteredNotes = useMemo(() => {
     if (!notes) return [];
     
-    return notes
-      .filter(note => {
+    const sortedNotes = [...notes].sort((a, b) => {
+        const timeA = a.updatedAt?.toMillis() || 0;
+        const timeB = b.updatedAt?.toMillis() || 0;
+        return timeB - timeA;
+    });
+
+    return sortedNotes.filter(note => {
         const matchesSearch = searchTerm.trim() === '' ||
           note.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
           note.content.toLowerCase().includes(searchTerm.toLowerCase());
         return matchesSearch;
-      })
-      .sort((a, b) => {
-        const timeA = a.updatedAt?.toMillis() || 0;
-        const timeB = b.updatedAt?.toMillis() || 0;
-        return timeB - timeA;
-      });
+    });
   }, [notes, searchTerm]);
   
   const showForm = isAdding || editingId !== null;
