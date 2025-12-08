@@ -47,8 +47,7 @@ export default function NotesPage() {
 
     setIsLoadingNotes(true);
     const q = query(
-      collection(firestore, "users", user.uid, "userNotes"),
-      where("category", "==", selectedSoftware)
+      collection(firestore, "users", user.uid, "userNotes")
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -66,7 +65,7 @@ export default function NotesPage() {
     });
 
     return () => unsubscribe();
-  }, [user, firestore, selectedSoftware]);
+  }, [user, firestore]);
 
   const [currentNote, setCurrentNote] = useState<Omit<Note, 'id' | 'userId'>>(defaultNoteState as Omit<Note, 'id' | 'userId'>);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -166,12 +165,13 @@ export default function NotesPage() {
     if (!notes) return [];
     
     return notes.filter(note => {
+        const matchesCategory = note.category === selectedSoftware;
         const matchesSearch = searchTerm.trim() === '' ||
           note.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
           note.content.toLowerCase().includes(searchTerm.toLowerCase());
-        return matchesSearch;
+        return matchesCategory && matchesSearch;
     });
-  }, [notes, searchTerm]);
+  }, [notes, selectedSoftware, searchTerm]);
   
   const showForm = isAdding || editingId !== null;
 

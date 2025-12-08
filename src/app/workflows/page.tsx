@@ -193,17 +193,19 @@ export default function WorkflowsPage() {
   const allWorkflows = useMemo(() => {
     const baseWorkflows = defaultWorkflowsData.filter(w => w.software === selectedSoftware);
     const customWorkflows = (userWorkflows || []).filter(w => w.software === selectedSoftware);
-    return [...baseWorkflows, ...customWorkflows].sort((a,b) => (a.isCustom ? -1 : 1));
+    return [...baseWorkflows, ...customWorkflows].sort((a,b) => {
+      if (a.isCustom && !b.isCustom) return -1;
+      if (!a.isCustom && b.isCustom) return 1;
+      return 0;
+    });
   }, [selectedSoftware, userWorkflows]);
 
 
   const handleSaveWorkflow = useCallback(async (workflowData: NewWorkflow) => {
     if (!user || !firestore) return;
     
-    const workflowPayload: Omit<Workflow, 'id'> = { 
+    const workflowPayload = { 
       ...workflowData, 
-      userId: user.uid,
-      isCustom: true,
       steps: workflowData.steps.filter(s => s.description.trim() !== '') 
     };
 
@@ -213,7 +215,7 @@ export default function WorkflowsPage() {
           await updateDoc(workflowDocRef, workflowPayload as any);
         } else {
           const workflowsCollection = collection(firestore, "users", user.uid, "userWorkflows");
-          await addDoc(workflowsCollection, workflowPayload);
+          await addDoc(workflowsCollection, { ...workflowPayload, userId: user.uid, isCustom: true });
         }
     } catch (error) {
         console.error("Error saving workflow: ", error);
@@ -284,12 +286,10 @@ export default function WorkflowsPage() {
   const extractVideoId = (urlOrId: string): string => {
     if (!urlOrId) return '';
   
-    // Check if it's already a valid 11-character ID
     if (/^[\w-]{11}$/.test(urlOrId)) {
       return urlOrId;
     }
   
-    // Regex to find video ID from various YouTube URL formats
     const regex = /(?:v=|youtu\.be\/|embed\/|watch\?v=|\/v\/)([\w-]{11})/;
     const match = urlOrId.match(regex);
   
@@ -297,8 +297,6 @@ export default function WorkflowsPage() {
       return match[1];
     }
   
-    // Fallback if no match is found (e.g., could be a malformed string)
-    // We try to parse it as a URL to handle edge cases, but within a try-catch
     try {
       const url = new URL(urlOrId);
       if (url.hostname.includes('youtube.com')) {
@@ -308,13 +306,10 @@ export default function WorkflowsPage() {
         return url.pathname.slice(1);
       }
     } catch (e) {
-      // If new URL() fails, it's not a valid URL. We can just return the original string or an empty one.
-      // Returning the original string might still work if it's just the ID but with extra characters.
-      // But it's safer to return the best guess or fallback to the original input.
       return urlOrId; 
     }
     
-    return urlOrId; // Final fallback
+    return urlOrId;
   };
 
   const editorWorkflow = useMemo(() => {
@@ -327,7 +322,6 @@ export default function WorkflowsPage() {
         };
       }
     }
-    // Default for new workflow
     return { title: '', description: '', steps: [{ description: '', timestamp: '' }], videoId: '', software: selectedSoftware };
   }, [editingId, allWorkflows, selectedSoftware]);
 
@@ -456,4 +450,3 @@ export default function WorkflowsPage() {
     </div>
   );
 }
-

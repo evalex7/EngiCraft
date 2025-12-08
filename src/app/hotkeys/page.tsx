@@ -109,10 +109,7 @@ export default function HotkeysPage() {
     }
 
     setIsLoadingUserHotkeys(true);
-    const q = query(
-        collection(firestore, "users", user.uid, "userHotkeys"),
-        where("software", "==", selectedSoftware)
-    );
+    const q = query(collection(firestore, "users", user.uid, "userHotkeys"));
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
         const loadedHotkeys = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Hotkey));
@@ -124,7 +121,7 @@ export default function HotkeysPage() {
     });
 
     return () => unsubscribe();
-  }, [user, firestore, selectedSoftware]);
+  }, [user, firestore]);
 
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -202,7 +199,7 @@ export default function HotkeysPage() {
 
   const allHotkeys = useMemo(() => {
     const baseHotkeys = defaultHotkeysData.filter(h => h.software === selectedSoftware);
-    const customHotkeys = userHotkeys || [];
+    const customHotkeys = (userHotkeys || []).filter(h => h.software === selectedSoftware);
     return [...baseHotkeys, ...customHotkeys];
   }, [selectedSoftware, userHotkeys]);
 
