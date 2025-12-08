@@ -35,7 +35,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
-import { useUser, useFirestore, useCollection, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking, setDocumentNonBlocking } from "@/firebase";
+import { useUser, useFirestore, useCollection, addDocumentNonBlocking, deleteDocumentNonBlocking, setDocumentNonBlocking } from "@/firebase";
 import { collection, query, where, doc } from "firebase/firestore";
 
 type Workflow = BaseWorkflow;
@@ -112,7 +112,7 @@ const WorkflowEditor = ({ isEditing, initialWorkflow, onSave, onCancel, software
                         rows={2} 
                         className="resize-y" 
                     />
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-col sm:flex-row items-center gap-2">
                         <Input 
                             value={step.timestamp} 
                             onChange={e => handleStepChange(index, 'timestamp', e.target.value)} 
@@ -124,7 +124,7 @@ const WorkflowEditor = ({ isEditing, initialWorkflow, onSave, onCancel, software
                             size="icon" 
                             onClick={() => removeStep(index)} 
                             disabled={workflow.steps.length === 1 && workflow.steps[0].description === ''}
-                            className="h-9 w-9 flex-shrink-0 text-muted-foreground hover:text-destructive"
+                            className="h-9 w-9 flex-shrink-0 text-muted-foreground hover:text-destructive self-end sm:self-center"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -152,7 +152,7 @@ export default function WorkflowsPage() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
 
-  const workflowsQuery = useMemoFirebase(() => {
+  const workflowsQuery = useMemo(() => {
     if (!user || !firestore) return null;
     return query(
       collection(firestore, "users", user.uid, "userWorkflows"),

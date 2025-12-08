@@ -19,8 +19,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { useUser, useFirestore, useCollection, useMemoFirebase, addDocumentNonBlocking, deleteDocumentNonBlocking, setDocumentNonBlocking } from "@/firebase";
-import { collection, doc, query, orderBy, where, serverTimestamp, type Timestamp } from "firebase/firestore";
+import { useUser, useFirestore, useCollection, addDocumentNonBlocking, deleteDocumentNonBlocking, setDocumentNonBlocking } from "@/firebase";
+import { collection, doc, query, where, serverTimestamp, type Timestamp } from "firebase/firestore";
 import { useSoftwareContext } from "@/context/software-context";
 import { type UserNote as BaseUserNote } from "@/lib/data";
 
@@ -36,12 +36,12 @@ export default function NotesPage() {
   const firestore = useFirestore();
   const { selectedSoftware } = useSoftwareContext();
 
-  const notesQuery = useMemoFirebase(() => {
+  const notesQuery = useMemo(() => {
     if (!user || !firestore) return null;
+    // Simplified query without server-side ordering
     return query(
       collection(firestore, "users", user.uid, "userNotes"),
-      where("category", "==", selectedSoftware),
-      orderBy("updatedAt", "desc")
+      where("category", "==", selectedSoftware)
     );
   }, [user, firestore, selectedSoftware]);
 
@@ -136,6 +136,8 @@ export default function NotesPage() {
   
   const filteredNotes = useMemo(() => {
     if (!notes) return [];
+    
+    // Perform client-side sorting and filtering
     return notes
       .filter(note => {
         const matchesSearch = searchTerm.trim() === '' ||
@@ -143,6 +145,11 @@ export default function NotesPage() {
           note.content.toLowerCase().includes(searchTerm.toLowerCase());
         return matchesSearch;
       })
+      .sort((a, b) => {
+        const timeA = a.updatedAt?.toMillis() || 0;
+        const timeB = b.updatedAt?.toMillis() || 0;
+        return timeB - timeA; // Sort descending
+      });
   }, [notes, searchTerm]);
   
   const showForm = isAdding || editingId !== null;

@@ -2,9 +2,9 @@
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
-import { useUser, useFirestore, useCollection, useMemoFirebase, setDocumentNonBlocking, addDocumentNonBlocking, deleteDocumentNonBlocking } from "@/firebase";
+import { useUser, useFirestore, useCollection, setDocumentNonBlocking, addDocumentNonBlocking, deleteDocumentNonBlocking } from "@/firebase";
 import { collection, doc, query, where } from "firebase/firestore";
-import { type Hotkey as BaseHotkey, hotkeys as defaultHotkeysData } from '@/lib/data';
+import { type Hotkey as BaseHotkey } from '@/lib/data';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -51,6 +51,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Badge } from '@/components/ui/badge';
+import { hotkeys as defaultHotkeysData } from '@/lib/data';
 
 type Hotkey = BaseHotkey & { isCustom?: boolean; userId?: string; };
 type NewHotkey = Omit<Hotkey, 'id' | 'isCustom' | 'userId'>;
@@ -98,7 +99,7 @@ export default function HotkeysPage() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
 
-  const userHotkeysQuery = useMemoFirebase(() => {
+  const userHotkeysQuery = useMemo(() => {
       if (!user || !firestore) return null;
       return query(
           collection(firestore, "users", user.uid, "userHotkeys"),

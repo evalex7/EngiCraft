@@ -62,32 +62,6 @@ export const useUser = (): {
   return { user, isUserLoading, userError };
 };
 
-/**
- * A wrapper around React.useMemo that "marks" the memoized value.
- * This is used to ensure that Firestore queries passed to custom hooks
- * like useCollection are properly memoized, preventing infinite re-render loops.
- * The __memo flag is a private check used by the hooks.
- */
-export function useMemoFirebase<T>(
-  factory: () => T,
-  deps: DependencyList
-): T {
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const memoized = useMemo(factory, deps);
-
-  if (memoized && typeof memoized === 'object') {
-    // Add a non-enumerable property to mark the object as memoized.
-    Object.defineProperty(memoized, '__memo', {
-      value: true,
-      writable: false,
-      enumerable: false,
-      configurable: false,
-    });
-  }
-
-  return memoized;
-}
-
 export {
   // Providers
   FirebaseProvider,
