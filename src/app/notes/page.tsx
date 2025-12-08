@@ -1,3 +1,4 @@
+
 // src/app/notes/page.tsx
 "use client";
 
@@ -20,7 +21,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { useUser, useFirestore, useCollection } from "@/firebase";
-import { collection, doc, query, where, serverTimestamp, type Timestamp, addDoc, updateDoc, deleteDoc } from "firebase/firestore";
+import { collection, doc, query, where, serverTimestamp, type Timestamp, addDoc, updateDoc, deleteDoc, orderBy } from "firebase/firestore";
 import { useSoftwareContext } from "@/context/software-context";
 import { type UserNote as BaseUserNote } from "@/lib/data";
 
@@ -140,21 +141,23 @@ export default function NotesPage() {
     }
   };
   
-  const filteredNotes = useMemo(() => {
+  const filteredAndSortedNotes = useMemo(() => {
     if (!notes) return [];
     
-    const sortedNotes = [...notes].sort((a, b) => {
-        const timeA = a.updatedAt?.toMillis() || 0;
-        const timeB = b.updatedAt?.toMillis() || 0;
-        return timeB - timeA;
-    });
-
-    return sortedNotes.filter(note => {
+    const filtered = notes.filter(note => {
         const matchesSearch = searchTerm.trim() === '' ||
           note.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
           note.content.toLowerCase().includes(searchTerm.toLowerCase());
         return matchesSearch;
     });
+
+    const sorted = filtered.sort((a, b) => {
+        const timeA = a.updatedAt?.toMillis ? a.updatedAt.toMillis() : 0;
+        const timeB = b.updatedAt?.toMillis ? b.updatedAt.toMillis() : 0;
+        return timeB - timeA;
+    });
+
+    return [...sorted];
   }, [notes, searchTerm]);
   
   const showForm = isAdding || editingId !== null;
@@ -272,7 +275,7 @@ export default function NotesPage() {
         </div>
       )}
 
-      {!isLoadingNotes && filteredNotes.length === 0 && !showForm ? (
+      {!isLoadingNotes && filteredAndSortedNotes.length === 0 && !showForm ? (
         <div className="text-center py-16 border-2 border-dashed rounded-lg">
           <p className="text-muted-foreground">{notes && notes.length > 0 ? "Нічого не знайдено за вашим запитом." : `У вас ще немає нотаток для ${selectedSoftware}.`}</p>
           <Button variant="link" className="mt-2" onClick={handleStartAdding}>
@@ -281,7 +284,7 @@ export default function NotesPage() {
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {filteredNotes.map((note) => (
+          {filteredAndSortedNotes.map((note) => (
             <Card key={note.id} className="flex flex-col">
                {note.imageUrl && (
                 <div className="relative aspect-video w-full">

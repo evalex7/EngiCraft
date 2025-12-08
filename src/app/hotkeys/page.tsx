@@ -1,9 +1,10 @@
+
 // src/app/hotkeys/page.tsx
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
 import { useUser, useFirestore, useCollection } from "@/firebase";
-import { collection, doc, query, where, addDoc, updateDoc, deleteDoc } from "firebase/firestore";
+import { collection, doc, query, where, addDoc, updateDoc, deleteDoc, orderBy } from "firebase/firestore";
 import { type Hotkey as BaseHotkey } from '@/lib/data';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -207,7 +208,7 @@ export default function HotkeysPage() {
       });
     }
 
-    return sortableItems;
+    return [...sortableItems];
   }, [allHotkeys, sortConfig]);
   
   const filteredHotkeys = sortedHotkeys.filter((hotkey) =>
