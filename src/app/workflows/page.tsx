@@ -1,3 +1,4 @@
+
 // src/app/workflows/page.tsx
 "use client";
 
@@ -13,10 +14,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { YoutubePlayer } from "@/components/youtube-player";
 import { useSoftwareContext } from "@/context/software-context";
 import { Button } from "@/components/ui/button";
-import { Plus, Trash2, Edit, Save, X, Clock, GripVertical } from "lucide-react";
+import { Plus, Trash2, Edit, Clock, GripVertical } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { softwareOptions } from "@/lib/data";
+import { softwareOptions, workflows as defaultWorkflowsData } from "@/lib/data";
 import {
   Select,
   SelectContent,
@@ -33,10 +34,11 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
+  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
-import { useUser, useFirestore, useCollection, addDocumentNonBlocking, deleteDocumentNonBlocking, setDocumentNonBlocking } from "@/firebase";
-import { collection, query, where, doc } from "firebase/firestore";
+import { useUser, useFirestore, useCollection } from "@/firebase";
+import { collection, query, where, doc, addDoc, setDoc, deleteDoc, updateDoc } from "firebase/firestore";
 
 type Workflow = BaseWorkflow;
 type NewWorkflow = Omit<Workflow, 'id' | 'isCustom' | 'userId'>;
@@ -152,7 +154,7 @@ export default function WorkflowsPage() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
 
-  const workflowsQuery = useMemo(() => {
+  const userWorkflowsQuery = useMemo(() => {
     if (!user || !firestore) return null;
     return query(
       collection(firestore, "users", user.uid, "userWorkflows"),
@@ -160,7 +162,7 @@ export default function WorkflowsPage() {
     );
   }, [user, firestore, selectedSoftware]);
 
-  const { data: userWorkflows, isLoading: isLoadingWorkflows } = useCollection<Workflow>(workflowsQuery);
+  const { data: userWorkflows, isLoading: isLoadingWorkflows } = useCollection<Workflow>(userWorkflowsQuery);
 
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -172,7 +174,14 @@ export default function WorkflowsPage() {
     setIsClient(true);
   }, []);
 
-  const handleSaveWorkflow = useCallback((workflowData: NewWorkflow) => {
+  const allWorkflows = useMemo(() => {
+    const baseWorkflows = defaultWorkflowsData.filter(w => w.software === selectedSoftware);
+    const customWorkflows = userWorkflows || [];
+    return [...baseWorkflows, ...customWorkflows].sort((a,b) => (a.isCustom ? -1 : 1));
+  }, [selectedSoftware, userWorkflows]);
+
+
+  const handleSaveWorkflow = useCallback(async (workflowData: NewWorkflow) => {
     if (!user || !firestore) return;
     
     const workflowPayload: Omit<Workflow, 'id'> = { 
@@ -182,12 +191,16 @@ export default function WorkflowsPage() {
       steps: workflowData.steps.filter(s => s.description.trim() !== '') 
     };
 
-    if (editingId) {
-      const workflowDocRef = doc(firestore, "users", user.uid, "userWorkflows", editingId);
-      setDocumentNonBlocking(workflowDocRef, workflowPayload, { merge: true });
-    } else {
-      const workflowsCollection = collection(firestore, "users", user.uid, "userWorkflows");
-      addDocumentNonBlocking(workflowsCollection, workflowPayload);
+    try {
+        if (editingId) {
+          const workflowDocRef = doc(firestore, "users", user.uid, "userWorkflows", editingId);
+          await updateDoc(workflowDocRef, workflowPayload as any);
+        } else {
+          const workflowsCollection = collection(firestore, "users", user.uid, "userWorkflows");
+          await addDoc(workflowsCollection, workflowPayload);
+        }
+    } catch (error) {
+        console.error("Error saving workflow: ", error);
     }
 
     handleCancel();
@@ -208,10 +221,14 @@ export default function WorkflowsPage() {
     setEditingId(null);
   }, []);
 
-  const handleDeleteWorkflow = (id: string) => {
+  const handleDeleteWorkflow = async (id: string) => {
     if (!user || !firestore) return;
-    const workflowDocRef = doc(firestore, "users", user.uid, "userWorkflows", id);
-    deleteDocumentNonBlocking(workflowDocRef);
+    try {
+        const workflowDocRef = doc(firestore, "users", user.uid, "userWorkflows", id);
+        await deleteDoc(workflowDocRef);
+    } catch(error) {
+        console.error("Error deleting workflow: ", error);
+    }
   };
   
   const parseTime = (timeStr?: string): number => {
@@ -248,27 +265,45 @@ export default function WorkflowsPage() {
     });
   }
 
-  const extractVideoId = (urlOrId: string) => {
+  const extractVideoId = (urlOrId: string): string => {
     if (!urlOrId) return '';
+  
+    // Check if it's already a valid 11-character ID
+    if (/^[\w-]{11}$/.test(urlOrId)) {
+      return urlOrId;
+    }
+  
+    // Regex to find video ID from various YouTube URL formats
+    const regex = /(?:v=|youtu\.be\/|embed\/|watch\?v=|\/v\/)([\w-]{11})/;
+    const match = urlOrId.match(regex);
+  
+    if (match) {
+      return match[1];
+    }
+  
+    // Fallback if no match is found (e.g., could be a malformed string)
+    // We try to parse it as a URL to handle edge cases, but within a try-catch
     try {
-      if (urlOrId.includes('youtube.com') || urlOrId.includes('youtu.be')) {
-        const url = new URL(urlOrId);
-        if (url.hostname === 'youtu.be') {
-          return url.pathname.slice(1).split('?')[0];
-        }
-        if (url.searchParams.has('v')) {
-          return url.searchParams.get('v')!;
-        }
+      const url = new URL(urlOrId);
+      if (url.hostname.includes('youtube.com')) {
+        return url.searchParams.get('v') || url.pathname.split('/').pop() || '';
+      }
+      if (url.hostname === 'youtu.be') {
+        return url.pathname.slice(1);
       }
     } catch (e) {
-      // Ignore invalid URLs and treat as ID
+      // If new URL() fails, it's not a valid URL. We can just return the original string or an empty one.
+      // Returning the original string might still work if it's just the ID but with extra characters.
+      // But it's safer to return the best guess or fallback to the original input.
+      return urlOrId; 
     }
-    return urlOrId.split('?')[0];
-  }
+    
+    return urlOrId; // Final fallback
+  };
 
   const editorWorkflow = useMemo(() => {
     if (editingId) {
-      const w = userWorkflows?.find(w => w.id === editingId);
+      const w = allWorkflows?.find(w => w.id === editingId);
       if (w) {
         return {
           ...w,
@@ -278,7 +313,7 @@ export default function WorkflowsPage() {
     }
     // Default for new workflow
     return { title: '', description: '', steps: [{ description: '', timestamp: '' }], videoId: '', software: selectedSoftware };
-  }, [editingId, userWorkflows, selectedSoftware]);
+  }, [editingId, allWorkflows, selectedSoftware]);
 
   const showEditor = isAdding || editingId !== null;
 
@@ -321,9 +356,9 @@ export default function WorkflowsPage() {
           <Card>
             <CardContent className="p-0">
                 <Accordion type="single" collapsible className="w-full" onValueChange={() => setActiveVideo(null)}>
-                  {userWorkflows && userWorkflows.length > 0 ? (
-                    userWorkflows.map((workflow) => (
-                      <AccordionItem value={workflow.id} key={workflow.id} className={cn(workflow.isCustom && 'bg-info/20 rounded-lg border-blue-200 border, px-2')}>
+                  {allWorkflows && allWorkflows.length > 0 ? (
+                    allWorkflows.map((workflow) => (
+                      <AccordionItem value={workflow.id} key={workflow.id} className={cn('data-[state=open]:bg-muted/50 rounded-lg')}>
                         <AccordionTrigger className="text-left hover:no-underline px-4 py-4">
                           <div className="flex flex-1 pr-4 items-start">
                             {workflow.isCustom && <GripVertical className="h-5 w-5 text-muted-foreground flex-shrink-0 mt-1 mr-2 hidden sm:block" />}
@@ -404,3 +439,4 @@ export default function WorkflowsPage() {
     </div>
   );
 }
+

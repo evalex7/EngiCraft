@@ -1,6 +1,5 @@
 'use client';
 
-import { useMemo, type DependencyList } from 'react';
 import { useCollection } from './firestore/use-collection';
 import { useDoc } from './firestore/use-doc';
 import { FirebaseProvider, FirebaseContext, type FirebaseContextValue } from './provider';
@@ -9,12 +8,6 @@ import type { Firestore } from 'firebase/firestore';
 import type { FirebaseApp } from 'firebase/app';
 import type { User } from 'firebase/auth';
 
-import {
-  setDocumentNonBlocking,
-  addDocumentNonBlocking,
-  updateDocumentNonBlocking,
-  deleteDocumentNonBlocking,
-} from './non-blocking-updates';
 import React from 'react';
 
 /**
@@ -68,9 +61,4 @@ export {
   // Hooks
   useCollection,
   useDoc,
-  // Non-blocking writes
-  setDocumentNonBlocking,
-  addDocumentNonBlocking,
-  updateDocumentNonBlocking,
-  deleteDocumentNonBlocking,
 };

@@ -19,8 +19,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { useUser, useFirestore, useCollection, addDocumentNonBlocking, deleteDocumentNonBlocking, setDocumentNonBlocking } from "@/firebase";
-import { collection, doc, query, where, serverTimestamp, type Timestamp } from "firebase/firestore";
+import { useUser, useFirestore, useCollection } from "@/firebase";
+import { collection, doc, query, where, serverTimestamp, type Timestamp, addDoc, setDoc, deleteDoc } from "firebase/firestore";
 import { useSoftwareContext } from "@/context/software-context";
 import { type UserNote as BaseUserNote } from "@/lib/data";
 
@@ -38,7 +38,6 @@ export default function NotesPage() {
 
   const notesQuery = useMemo(() => {
     if (!user || !firestore) return null;
-    // Simplified query without server-side ordering
     return query(
       collection(firestore, "users", user.uid, "userNotes"),
       where("category", "==", selectedSoftware)
@@ -75,7 +74,7 @@ export default function NotesPage() {
     }
   };
 
-  const handleSaveNote = () => {
+  const handleSaveNote = async () => {
     if (!user || !firestore) return;
     if (currentNote.title.trim() === "" || currentNote.content.trim() === "") return;
 
@@ -91,13 +90,17 @@ export default function NotesPage() {
         notePayload.imageUrl = currentNote.imageUrl;
       }
 
-    if (editingId) {
-      const noteDocRef = doc(firestore, "users", user.uid, "userNotes", editingId);
-      setDocumentNonBlocking(noteDocRef, notePayload, { merge: true });
-    } else {
-      notePayload.createdAt = serverTimestamp();
-      const notesCollection = collection(firestore, 'users', user.uid, 'userNotes');
-      addDocumentNonBlocking(notesCollection, notePayload);
+    try {
+        if (editingId) {
+          const noteDocRef = doc(firestore, "users", user.uid, "userNotes", editingId);
+          await setDoc(noteDocRef, notePayload, { merge: true });
+        } else {
+          notePayload.createdAt = serverTimestamp();
+          const notesCollection = collection(firestore, 'users', user.uid, 'userNotes');
+          await addDoc(notesCollection, notePayload);
+        }
+    } catch (error) {
+        console.error("Error saving note: ", error);
     }
     
     handleCancel();
@@ -128,16 +131,19 @@ export default function NotesPage() {
     setCurrentNote(defaultNoteState as Omit<Note, 'id' | 'userId'>);
   };
 
-  const handleDeleteNote = (id: string) => {
+  const handleDeleteNote = async (id: string) => {
     if (!user || !firestore) return;
-    const noteDocRef = doc(firestore, "users", user.uid, "userNotes", id);
-    deleteDocumentNonBlocking(noteDocRef);
+    try {
+        const noteDocRef = doc(firestore, "users", user.uid, "userNotes", id);
+        await deleteDoc(noteDocRef);
+    } catch (error) {
+        console.error("Error deleting note: ", error);
+    }
   };
   
   const filteredNotes = useMemo(() => {
     if (!notes) return [];
     
-    // Perform client-side sorting and filtering
     return notes
       .filter(note => {
         const matchesSearch = searchTerm.trim() === '' ||
@@ -148,7 +154,7 @@ export default function NotesPage() {
       .sort((a, b) => {
         const timeA = a.updatedAt?.toMillis() || 0;
         const timeB = b.updatedAt?.toMillis() || 0;
-        return timeB - timeA; // Sort descending
+        return timeB - timeA;
       });
   }, [notes, searchTerm]);
   

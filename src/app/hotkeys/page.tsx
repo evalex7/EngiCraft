@@ -2,8 +2,8 @@
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
-import { useUser, useFirestore, useCollection, setDocumentNonBlocking, addDocumentNonBlocking, deleteDocumentNonBlocking } from "@/firebase";
-import { collection, doc, query, where } from "firebase/firestore";
+import { useUser, useFirestore, useCollection } from "@/firebase";
+import { collection, doc, query, where, addDoc, setDoc, deleteDoc } from "firebase/firestore";
 import { type Hotkey as BaseHotkey } from '@/lib/data';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -50,7 +50,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { Badge } from '@/components/ui/badge';
 import { hotkeys as defaultHotkeysData } from '@/lib/data';
 
 type Hotkey = BaseHotkey & { isCustom?: boolean; userId?: string; };
@@ -125,7 +124,7 @@ export default function HotkeysPage() {
     }
   }, [selectedSoftware, isEditorOpen]);
 
-  const handleSaveHotkey = () => {
+  const handleSaveHotkey = async () => {
     if (!currentHotkey.command || !currentHotkey.keys || !currentHotkey.description || !user || !firestore) return;
     
     const payload: Omit<Hotkey, 'id'> = {
@@ -137,12 +136,17 @@ export default function HotkeysPage() {
         isCustom: true,
     };
     
-    if (editingId) {
-      const hotkeyDocRef = doc(firestore, "users", user.uid, "userHotkeys", editingId);
-      setDocumentNonBlocking(hotkeyDocRef, payload, { merge: true });
-    } else {
-      const hotkeysCollection = collection(firestore, 'users', user.uid, 'userHotkeys');
-      addDocumentNonBlocking(hotkeysCollection, payload);
+    try {
+        if (editingId) {
+          const hotkeyDocRef = doc(firestore, "users", user.uid, "userHotkeys", editingId);
+          await setDoc(hotkeyDocRef, payload, { merge: true });
+        } else {
+          const hotkeysCollection = collection(firestore, 'users', user.uid, 'userHotkeys');
+          await addDoc(hotkeysCollection, payload);
+        }
+    } catch (error) {
+        console.error("Error saving hotkey: ", error);
+        // Here you could show a toast to the user
     }
     
     handleCancel();
@@ -171,10 +175,14 @@ export default function HotkeysPage() {
     setCurrentHotkey({ command: '', keys: '', description: '', software: selectedSoftware });
   };
 
-  const handleDeleteHotkey = (id: string) => {
+  const handleDeleteHotkey = async (id: string) => {
     if (!user || !firestore) return;
-    const hotkeyDocRef = doc(firestore, "users", user.uid, "userHotkeys", id);
-    deleteDocumentNonBlocking(hotkeyDocRef);
+    try {
+        const hotkeyDocRef = doc(firestore, "users", user.uid, "userHotkeys", id);
+        await deleteDoc(hotkeyDocRef);
+    } catch (error) {
+        console.error("Error deleting hotkey: ", error);
+    }
   };
 
   const allHotkeys = useMemo(() => {
@@ -243,12 +251,6 @@ export default function HotkeysPage() {
               {hotkey.isCustom ? (
                 <>
                     <div className="flex justify-end items-center gap-2 mb-2">
-                        <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground h-8 w-8">
-                            <ArrowUp className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground h-8 w-8">
-                            <ArrowDown className="h-4 w-4" />
-                        </Button>
                         <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground h-8 w-8" onClick={(e) => { e.stopPropagation(); handleStartEditing(hotkey); }}>
                             <Edit className="h-4 w-4" />
                         </Button>

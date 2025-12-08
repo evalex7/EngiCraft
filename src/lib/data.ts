@@ -69,6 +69,64 @@ export type Workflow = {
   userId?: string;
 };
 
+export const workflows: Workflow[] = [
+    {
+        id: "w1",
+        title: "Створення та налаштування електричних ланцюгів",
+        description: "Цей робочий процес показує, як ефективно створювати та керувати електричними ланцюгами для обладнання та освітлювальних приладів у Revit.",
+        steps: [
+            { description: "Виберіть обладнання або прилад для підключення.", timestamp: "0m15s" },
+            { description: "Натисніть на вкладку 'Power' (Живлення), щоб створити новий ланцюг.", timestamp: "0m30s" },
+            { description: "Виберіть панель (щит), до якої буде підключено ланцюг.", timestamp: "0m45s" },
+            { description: "Відредагуйте шлях прокладання дроту за допомогою інструментів 'Arc' або 'Chamfer'.", timestamp: "1m10s" },
+            { description: "Перевірте навантаження та параметри ланцюга в 'System Browser'.", timestamp: "1m35s" }
+        ],
+        videoId: "https://www.youtube.com/watch?v=n4r9p63-a_I",
+        software: "Revit"
+    },
+    {
+        id: "w2",
+        title: "Координація систем ОВК та Електро",
+        description: "Як виявляти та вирішувати колізії між повітропроводами системи опалення, вентиляції та кондиціонування (ОВК) та електричними лотками.",
+        steps: [
+            { description: "Запустіть інструмент 'Interference Check' на вкладці 'Collaborate'.", timestamp: "0m22s" },
+            { description: "Встановіть категорії для перевірки: 'Ducts' та 'Cable Trays'.", timestamp: "0m40s" },
+            { description: "Проаналізуйте звіт про колізії.", timestamp: "1m05s" },
+            { description: "Використовуйте інструмент 'Align' (AL) для коригування висоти лотків або повітропроводів.", timestamp: "1m30s" },
+            { description: "Повторно запустіть перевірку, щоб підтвердити вирішення колізії.", timestamp: "2m00s" }
+        ],
+        videoId: "https://www.youtube.com/watch?v=d_k3d5g_z0s",
+        software: "Revit"
+    },
+    {
+        id: "w3",
+        title: "Створення 3D-моделі з 2D-креслень",
+        description: "Крок за кроком процес імпорту 2D-креслення з AutoCAD та створення на його основі 3D-моделі в SketchUp.",
+        steps: [
+            { description: "Імпортуйте DWG/DXF файл: 'File' > 'Import'.", timestamp: "0m10s" },
+            { description: "Використовуйте інструмент 'Line' (L), щоб обвести контури стін.", timestamp: "0m50s" },
+            { description: "Використовуйте 'Push/Pull' (P) для надання об'єму стінам.", timestamp: "1m25s" },
+            { description: "Створіть компоненти для вікон та дверей для повторного використання.", timestamp: "2m10s" }
+        ],
+        videoId: "https://www.youtube.com/watch?v=O57B4A8iIuM",
+        software: "SketchUp"
+    },
+    {
+        id: "w4",
+        title: "Налаштування динамічних блоків",
+        description: "Як створювати та налаштовувати динамічні блоки в AutoCAD для підвищення ефективності.",
+        steps: [
+            { description: "Створіть геометрію блоку.", timestamp: "0m30s" },
+            { description: "Відкрийте редактор блоків командою 'BEDIT'.", timestamp: "1m00s" },
+            { description: "Додайте параметри (наприклад, 'Linear', 'Rotation') з палітри 'Block Authoring'.", timestamp: "1m45s" },
+            { description: "Додайте дії (наприклад, 'Stretch', 'Rotate') та прив'яжіть їх до параметрів.", timestamp: "2m30s" },
+            { description: "Збережіть та протестуйте блок.", timestamp: "3m15s" }
+        ],
+        videoId: "https://www.youtube.com/watch?v=M-b_Lcr33vE",
+        software: "AutoCAD"
+    }
+];
+
 export type UserNote = {
     id: string;
     title: string;
