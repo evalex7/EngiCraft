@@ -36,7 +36,6 @@ export default function NotesPage() {
   const firestore = useFirestore();
   const { selectedSoftware } = useSoftwareContext();
 
-  // THE FIX: Sort by 'updatedAt' for reliable real-time updates.
   const notesQuery = useMemoFirebase(() => {
     if (!user || !firestore) return null;
     return query(
@@ -48,7 +47,7 @@ export default function NotesPage() {
 
   const { data: notes, isLoading: isLoadingNotes } = useCollection<Note>(notesQuery);
 
-  const [currentNote, setCurrentNote] = useState(defaultNoteState);
+  const [currentNote, setCurrentNote] = useState<Omit<Note, 'id' | 'userId'>>(defaultNoteState as Omit<Note, 'id' | 'userId'>);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isAdding, setIsAdding] = useState(false);
   const [isClient, setIsClient] = useState(false);
@@ -80,13 +79,12 @@ export default function NotesPage() {
     if (!user || !firestore) return;
     if (currentNote.title.trim() === "" || currentNote.content.trim() === "") return;
 
-    // THE FIX: Always include `updatedAt` on every save operation.
     const notePayload: Partial<Note> & { updatedAt: any } = {
         userId: user.uid,
         title: currentNote.title,
         content: currentNote.content,
         category: selectedSoftware,
-        updatedAt: serverTimestamp(), // This triggers synchronization
+        updatedAt: serverTimestamp(),
       };
 
       if (currentNote.imageUrl) {
@@ -97,7 +95,7 @@ export default function NotesPage() {
       const noteDocRef = doc(firestore, "users", user.uid, "userNotes", editingId);
       setDocumentNonBlocking(noteDocRef, notePayload, { merge: true });
     } else {
-      notePayload.createdAt = serverTimestamp(); // Set createdAt only on creation
+      notePayload.createdAt = serverTimestamp();
       const notesCollection = collection(firestore, 'users', user.uid, 'userNotes');
       addDocumentNonBlocking(notesCollection, notePayload);
     }
@@ -112,6 +110,8 @@ export default function NotesPage() {
       content: note.content,
       imageUrl: note.imageUrl || "",
       category: note.category,
+      createdAt: note.createdAt,
+      updatedAt: note.updatedAt,
     });
     setIsAdding(false);
   };
@@ -119,13 +119,13 @@ export default function NotesPage() {
   const handleStartAdding = () => {
     setIsAdding(true);
     setEditingId(null);
-    setCurrentNote({...defaultNoteState, category: selectedSoftware});
+    setCurrentNote({...defaultNoteState, category: selectedSoftware} as Omit<Note, 'id'|'userId'>);
   };
   
   const handleCancel = () => {
     setIsAdding(false);
     setEditingId(null);
-    setCurrentNote(defaultNoteState);
+    setCurrentNote(defaultNoteState as Omit<Note, 'id' | 'userId'>);
   };
 
   const handleDeleteNote = (id: string) => {
@@ -315,6 +315,3 @@ export default function NotesPage() {
     </div>
   );
 }
-    
-
-    
