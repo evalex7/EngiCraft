@@ -37,8 +37,8 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
-import { useUser, useFirestore, useCollection } from "@/firebase";
-import { collection, query, where, doc, addDoc, setDoc, deleteDoc, updateDoc } from "firebase/firestore";
+import { useUser, useFirestore } from "@/firebase";
+import { collection, query, where, doc, addDoc, updateDoc, deleteDoc, onSnapshot } from "firebase/firestore";
 
 type Workflow = BaseWorkflow;
 type NewWorkflow = Omit<Workflow, 'id' | 'isCustom' | 'userId'>;
@@ -154,15 +154,31 @@ export default function WorkflowsPage() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
 
-  const userWorkflowsQuery = useMemo(() => {
-    if (!user || !firestore) return null;
-    return query(
-      collection(firestore, "users", user.uid, "userWorkflows"),
-      where("software", "==", selectedSoftware)
-    );
-  }, [user, firestore, selectedSoftware]);
+  const [userWorkflows, setUserWorkflows] = useState<Workflow[]>([]);
+  const [isLoadingWorkflows, setIsLoadingWorkflows] = useState(true);
 
-  const { data: userWorkflows, isLoading: isLoadingWorkflows } = useCollection<Workflow>(userWorkflowsQuery);
+  useEffect(() => {
+    if (!user || !firestore) {
+        setIsLoadingWorkflows(false);
+        return;
+    }
+
+    setIsLoadingWorkflows(true);
+    const q = query(
+        collection(firestore, "users", user.uid, "userWorkflows")
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+        const loadedWorkflows = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Workflow));
+        setUserWorkflows(loadedWorkflows);
+        setIsLoadingWorkflows(false);
+    }, (error) => {
+        console.error("Error fetching workflows:", error);
+        setIsLoadingWorkflows(false);
+    });
+
+    return () => unsubscribe();
+  }, [user, firestore]);
 
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -176,7 +192,7 @@ export default function WorkflowsPage() {
 
   const allWorkflows = useMemo(() => {
     const baseWorkflows = defaultWorkflowsData.filter(w => w.software === selectedSoftware);
-    const customWorkflows = userWorkflows || [];
+    const customWorkflows = (userWorkflows || []).filter(w => w.software === selectedSoftware);
     return [...baseWorkflows, ...customWorkflows].sort((a,b) => (a.isCustom ? -1 : 1));
   }, [selectedSoftware, userWorkflows]);
 
@@ -428,6 +444,7 @@ export default function WorkflowsPage() {
                   ) : (
                     <div className="text-center py-16 px-6">
                         <p className="text-muted-foreground">У вас ще немає робочих процесів для {selectedSoftware}.</p>
+
                         <Button variant="link" className="mt-2" onClick={handleStartAdding}>Створити перший процес</Button>
                     </div>
                   )}
