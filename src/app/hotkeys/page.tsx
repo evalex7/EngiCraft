@@ -3,8 +3,8 @@
 "use client";
 
 import { useState, useMemo, useEffect } from 'react';
-import { useUser, useFirestore, useCollection } from "@/firebase";
-import { collection, doc, query, where, addDoc, updateDoc, deleteDoc, orderBy } from "firebase/firestore";
+import { useUser, useFirestore } from "@/firebase";
+import { collection, doc, query, where, addDoc, updateDoc, deleteDoc, onSnapshot, orderBy, Query } from "firebase/firestore";
 import { type Hotkey as BaseHotkey } from '@/lib/data';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -99,15 +99,32 @@ export default function HotkeysPage() {
   const { user, isUserLoading } = useUser();
   const firestore = useFirestore();
 
-  const userHotkeysQuery = useMemo(() => {
-      if (!user || !firestore) return null;
-      return query(
-          collection(firestore, "users", user.uid, "userHotkeys"),
-          where("software", "==", selectedSoftware)
-      );
-  }, [user, firestore, selectedSoftware]);
+  const [userHotkeys, setUserHotkeys] = useState<Hotkey[]>([]);
+  const [isLoadingUserHotkeys, setIsLoadingUserHotkeys] = useState(true);
 
-  const { data: userHotkeys, isLoading: isLoadingUserHotkeys } = useCollection<Hotkey>(userHotkeysQuery);
+  useEffect(() => {
+    if (!user || !firestore) {
+        setIsLoadingUserHotkeys(false);
+        return;
+    }
+
+    setIsLoadingUserHotkeys(true);
+    const q = query(
+        collection(firestore, "users", user.uid, "userHotkeys"),
+        where("software", "==", selectedSoftware)
+    );
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+        const loadedHotkeys = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Hotkey));
+        setUserHotkeys(loadedHotkeys);
+        setIsLoadingUserHotkeys(false);
+    }, (error) => {
+        console.error("Error fetching hotkeys:", error);
+        setIsLoadingUserHotkeys(false);
+    });
+
+    return () => unsubscribe();
+  }, [user, firestore, selectedSoftware]);
 
   const [isEditorOpen, setIsEditorOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -145,7 +162,6 @@ export default function HotkeysPage() {
         }
     } catch (error) {
         console.error("Error saving hotkey: ", error);
-        // Here you could show a toast to the user
     }
     
     handleCancel();

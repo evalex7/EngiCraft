@@ -20,12 +20,11 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { useUser, useFirestore, useCollection } from "@/firebase";
-import { collection, doc, query, where, serverTimestamp, type Timestamp, addDoc, updateDoc, deleteDoc, orderBy } from "firebase/firestore";
+import { useUser, useFirestore } from "@/firebase";
+import { collection, doc, query, where, serverTimestamp, type Timestamp, addDoc, updateDoc, deleteDoc, orderBy, onSnapshot, Query } from "firebase/firestore";
 import { useSoftwareContext } from "@/context/software-context";
 import { type UserNote as BaseUserNote } from "@/lib/data";
 
-// Extend the base note type to include the required updated timestamp
 type Note = BaseUserNote & {
     updatedAt: Timestamp;
 };
@@ -37,15 +36,37 @@ export default function NotesPage() {
   const firestore = useFirestore();
   const { selectedSoftware } = useSoftwareContext();
 
-  const notesQuery = useMemo(() => {
-    if (!user || !firestore) return null;
-    return query(
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [isLoadingNotes, setIsLoadingNotes] = useState(true);
+
+  useEffect(() => {
+    if (!user || !firestore) {
+        setIsLoadingNotes(false);
+        return;
+    };
+
+    setIsLoadingNotes(true);
+    const q = query(
       collection(firestore, "users", user.uid, "userNotes"),
       where("category", "==", selectedSoftware)
     );
-  }, [user, firestore, selectedSoftware]);
 
-  const { data: notes, isLoading: isLoadingNotes } = useCollection<Note>(notesQuery);
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+        const loadedNotes = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Note));
+        const sortedNotes = loadedNotes.sort((a, b) => {
+            const timeA = a.updatedAt?.toMillis ? a.updatedAt.toMillis() : 0;
+            const timeB = b.updatedAt?.toMillis ? b.updatedAt.toMillis() : 0;
+            return timeB - timeA;
+        });
+        setNotes([...sortedNotes]);
+        setIsLoadingNotes(false);
+    }, (error) => {
+        console.error("Error fetching notes:", error);
+        setIsLoadingNotes(false);
+    });
+
+    return () => unsubscribe();
+  }, [user, firestore, selectedSoftware]);
 
   const [currentNote, setCurrentNote] = useState<Omit<Note, 'id' | 'userId'>>(defaultNoteState as Omit<Note, 'id' | 'userId'>);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -141,23 +162,15 @@ export default function NotesPage() {
     }
   };
   
-  const filteredAndSortedNotes = useMemo(() => {
+  const filteredNotes = useMemo(() => {
     if (!notes) return [];
     
-    const filtered = notes.filter(note => {
+    return notes.filter(note => {
         const matchesSearch = searchTerm.trim() === '' ||
           note.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
           note.content.toLowerCase().includes(searchTerm.toLowerCase());
         return matchesSearch;
     });
-
-    const sorted = filtered.sort((a, b) => {
-        const timeA = a.updatedAt?.toMillis ? a.updatedAt.toMillis() : 0;
-        const timeB = b.updatedAt?.toMillis ? b.updatedAt.toMillis() : 0;
-        return timeB - timeA;
-    });
-
-    return [...sorted];
   }, [notes, searchTerm]);
   
   const showForm = isAdding || editingId !== null;
@@ -275,7 +288,7 @@ export default function NotesPage() {
         </div>
       )}
 
-      {!isLoadingNotes && filteredAndSortedNotes.length === 0 && !showForm ? (
+      {!isLoadingNotes && filteredNotes.length === 0 && !showForm ? (
         <div className="text-center py-16 border-2 border-dashed rounded-lg">
           <p className="text-muted-foreground">{notes && notes.length > 0 ? "Нічого не знайдено за вашим запитом." : `У вас ще немає нотаток для ${selectedSoftware}.`}</p>
           <Button variant="link" className="mt-2" onClick={handleStartAdding}>
@@ -284,7 +297,7 @@ export default function NotesPage() {
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {filteredAndSortedNotes.map((note) => (
+          {filteredNotes.map((note) => (
             <Card key={note.id} className="flex flex-col">
                {note.imageUrl && (
                 <div className="relative aspect-video w-full">
