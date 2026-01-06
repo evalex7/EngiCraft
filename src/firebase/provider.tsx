@@ -4,50 +4,15 @@ import React, { createContext, useContext, ReactNode, useMemo, useState, useEffe
 import { FirebaseApp, initializeApp, getApps, getApp } from 'firebase/app';
 import { Firestore, getFirestore } from 'firebase/firestore';
 import { Auth, User, onAuthStateChanged, getAuth } from 'firebase/auth';
-import { firebaseConfig as fileConfig } from './config';
+import { firebaseConfig } from './config';
 import { FirebaseErrorListener } from '@/components/FirebaseErrorListener';
-
-// Function to build config from environment variables
-const getConfigFromEnv = () => {
-  const envConfig = {
-    apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-    authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-    projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-    storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-    messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-    appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-  };
-  // Check if all required fields are present
-  if (Object.values(envConfig).every(value => value)) {
-    return envConfig;
-  }
-  return null;
-};
-
 
 // Helper to initialize Firebase
 function getFirebaseApp(): FirebaseApp {
-    const envConfig = getConfigFromEnv();
-    const configToUse = envConfig || fileConfig;
-
     if (getApps().length > 0) {
-        // If an app is already initialized, check if its config matches the desired one.
-        const currentApp = getApp();
-        const currentConfig = currentApp.options;
-        if (
-            currentConfig.apiKey === configToUse.apiKey &&
-            currentConfig.projectId === configToUse.projectId
-        ) {
-            return currentApp; // Return existing app if config matches
-        }
-        // NOTE: Firebase does not allow re-initialization with a different config.
-        // This scenario might require a page reload in a real-world app if configs could change dynamically.
-        // For this context, we assume config is stable per environment.
-        return currentApp; 
+        return getApp();
     }
-    
-    // If no app is initialized, initialize with the determined config.
-    return initializeApp(configToUse);
+    return initializeApp(firebaseConfig);
 }
 
 // React Context
